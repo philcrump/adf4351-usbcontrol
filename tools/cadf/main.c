@@ -15,7 +15,7 @@ static struct libusb_device_handle *devh = NULL;
 
 int main(void)
 {
-    uint64_t adf4351_requested_frequency = 2199.0e6;// Hz
+    uint64_t adf4351_requested_frequency = 2405.00e6;// Hz
     uint32_t adf4351_requested_power = 3; // 3 = +5 dbm
 
     uint32_t adf4351_requested_ref_freq = 100e6; // Hz
@@ -106,13 +106,32 @@ int main(void)
         reg_bytes[2] = (reg_write >> 16) & 0xFF;
         reg_bytes[3] = (reg_write >> 24) & 0xFF;
 
-        rc = libusb_control_transfer(devh, 0x40, 0xDD, 0x0000, 0x0000, reg_bytes, 4, 0);
+        rc = libusb_control_transfer(devh, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_OUT | LIBUSB_RECIPIENT_DEVICE, 0xDD, 0x0000, 0x0000, reg_bytes, 4, 0);
 	    if (rc < 0)
         {
 	        fprintf(stderr, "Error during control transfer: %s\n",
 	                libusb_error_name(rc));
 	    }
    	}
+
+
+    unsigned char response_bytes[16];
+
+    rc = libusb_control_transfer(devh, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_IN | LIBUSB_RECIPIENT_INTERFACE, 0xDE, 0x0000, 0x0000, response_bytes, 16, 0);
+    if (rc < 0)
+    {
+        fprintf(stderr, "Error during control transfer: %s\n",
+                libusb_error_name(rc));
+    }
+    else
+    {
+        uint64_t device_time = (response_bytes[0] << 56) + (response_bytes[1] << 48) + (response_bytes[2] << 40) + (response_bytes[3] << 32) + (response_bytes[4] << 24) + (response_bytes[5] << 16) + (response_bytes[6] << 8) + response_bytes[7];
+        uint64_t device_lastlockloss = (response_bytes[8] << 56) + (response_bytes[9] << 48) + (response_bytes[10] << 40) + (response_bytes[11] << 32) + (response_bytes[12] << 24) + (response_bytes[13] << 16) + (response_bytes[14] << 8) + response_bytes[15];
+
+        printf("Device uptime:   %.3fs\n", (float)device_time/1.0e3);
+        printf("Last lock time:  %.3fs\n", (float)device_lastlockloss/1.0e3);
+        printf("Time since lock loss: %.3fs\n", (float)(device_time - device_lastlockloss)/1.0e3);
+    }
 
     libusb_release_interface(devh, 0);
 
