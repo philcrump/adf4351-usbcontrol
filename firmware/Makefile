@@ -30,24 +30,12 @@ BMP_PORT	?=
 
 TARGETS		:= stm32/f1
 
-V=1
-all: bin check-libopencm3
+SOURCES = $(filter-out $(BINARY).c, $(wildcard *.c))
 
-check-libopencm3:
-	@if [ ! "`ls -A $(OPENCM3_DIR)`" ] ; then \
-		printf "######## ERROR ########\n"; \
-		printf "\tlibopencm3 is not initialized.\n"; \
-		printf "\tPlease run:\n"; \
-		printf "\t$$ git submodule init\n"; \
-		printf "\t$$ git submodule update\n"; \
-		printf "\tbefore running make.\n"; \
-		printf "######## ERROR ########\n"; \
-		exit 1; \
-	fi
-	@if [ ! -f "$(OPENCM3_DIR)/lib/lib$(LIBNAME).a" ]; then \
-		echo "INFO: Need to compile libopecm3"; \
-		$(Q)$(MAKE) -C $(OPENCM3_DIR) TARGETS=$(TARGETS); \
-	fi
+OBJS = $(SOURCES:.c=.o)
+
+V=1
+all: bin
 
 stlink-flash: $(BINARY).bin
 	@printf "  FLASH  $<\n"
