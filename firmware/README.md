@@ -12,10 +12,8 @@
 ## Compile
 
 ```bash
-# Compile libopencm3
-make -C libopencm3/ TARGETS=stm32/f1
-# Compile firmware
-make
+# Compile
+./build
 # Flash board with STLINK
 make stlink-flash
 ```

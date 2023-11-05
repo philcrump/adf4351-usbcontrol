@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+source_dir="$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+cd $source_dir
+
+COLOUR_GREEN='\033[0;32m'
+COLOUR_YELLOW='\033[1;33m'
+COLOUR_PURPLE='\033[0;35m'
+COLOUR_RED='\033[0;31m'
+COLOUR_OFF='\033[0;00m'
+CLEAR_LINE='\033[2K'
+
+_ERROR_="$COLOUR_RED[ERROR]$COLOUR_OFF"
+_INFO_="$COLOUR_PURPLE[INFO]$COLOUR_OFF"
+_DEBUG_="$COLOUR_YELLOW[DEBUG]$COLOUR_OFF"
+
+opt_quiet=false
+
+print() {
+  if ! $opt_quiet
+  then
+    echo -e $@ >&1
+  fi
+}
+
+libopencm3=libopencm3/
+libopencm3_liba="${libopencm3}/lib/libopencm3_stm32f1.a"
+libopencm3_targets="stm32/f1"
+
+binary=main.elf
+
+if [ ! -f ${libopencm3_liba} ]; then
+  echo -ne "$_INFO_ Compiling libopencm3... \r"
+  cd ${libopencm3} && make clean &> /dev/null && make TARGETS=${libopencm3_targets} &> /dev/null;
+  if [ $? -gt 0 ]
+  then
+    print "$_ERROR_ Failed to compile libopencm3"
+    exit 1
+  fi
+  print "$_INFO_ Compiled libopencm3.     "
+  cd $source_dir;
+fi
+
+echo -ne "$_INFO_ Compiling firmware... \r"  
+make clean && make
+if [ $? -gt 0 ]
+then
+  print "$_ERROR_ Failed to compile firmware"
+  exit 1
+fi
+echo -e "$_INFO_ Compiled firmware.      "
+
+stm32_target_name="STM32F103xB"
+stm32_target_ram=" 20K"
+stm32_target_rom="128K"
+
+size=`arm-none-eabi-size ${binary} | sed -n 2p`
+
+size_text=`echo $size | grep -o -E '[0-9]+' | sed -n 1p`
+size_data=`echo $size | grep -o -E '[0-9]+' | sed -n 2p`
+size_bss=`echo $size | grep -o -E '[0-9]+' | sed -n 3p`
+
+size_flash=$(($size_text+$size_data))
+size_ram=$(($size_data+$size_bss))
+
+printf "STM32 Target: ${stm32_target_name}\n"
+printf "RAM Usage: %5s B / ${stm32_target_ram}\n" ${size_ram}
+printf "ROM Usage: %5s B / ${stm32_target_rom}\n" ${size_flash}

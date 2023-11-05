@@ -1,6 +1,6 @@
 ##
 
-BINARY = adf4351-usbcontrol
+BINARY = main
 
 LDSCRIPT = ./stm32f103xb.ld
 
