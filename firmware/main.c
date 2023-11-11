@@ -103,6 +103,7 @@ static volatile uint64_t last_lostlock_millis = 0;
 uint32_t usbd_control_buffer[32];
 
 static uint64_t usb_freq = 0;
+static uint8_t usb_enablevco = 0;
 
 static uint32_t usb_reg = 0;
 static uint8_t usb_response_buf[24];
@@ -153,7 +154,7 @@ static enum usbd_request_return_codes vendor_control_callback(usbd_device *usbd_
             {
                 case 0xDC:
                 {
-                    if (*len != 8)
+                    if (*len != 9)
                         return USBD_REQ_NOTSUPP;
 
                     usb_freq = ((uint64_t)(*buf)[0] << 56)
@@ -165,7 +166,10 @@ static enum usbd_request_return_codes vendor_control_callback(usbd_device *usbd_
                             | ((uint64_t)(*buf)[6] << 8)
                             | (uint64_t)(*buf)[7];
 
+                    usb_enablevco = (*buf)[8];
+
                     adf_parameters.power_up_frequency = usb_freq;
+                    adf_parameters.vco_powerdown = (usb_enablevco == 0x00 ? 1 : 0);
 
                     adf4350_setup(&adf_parameters);
 

@@ -11,6 +11,7 @@ static struct libusb_device_handle *devh = NULL;
 
 int main(void)
 {
+    bool adf4351_requested_vco_enable = true;
     uint64_t adf4351_requested_frequency = 2405e6;// Hz
 
 	int rc;
@@ -46,18 +47,19 @@ int main(void)
         goto out;
     }
 
-    unsigned char freq_bytes[8];
+    unsigned char command_bytes[9];
 
-    freq_bytes[0] = (adf4351_requested_frequency >> 56) & 0xFF;
-    freq_bytes[1] = (adf4351_requested_frequency >> 48) & 0xFF;
-    freq_bytes[2] = (adf4351_requested_frequency >> 40) & 0xFF;
-    freq_bytes[3] = (adf4351_requested_frequency >> 32) & 0xFF;
-    freq_bytes[4] = (adf4351_requested_frequency >> 24) & 0xFF;
-    freq_bytes[5] = (adf4351_requested_frequency >> 16) & 0xFF;
-    freq_bytes[6] = (adf4351_requested_frequency >> 8) & 0xFF;
-    freq_bytes[7] = (adf4351_requested_frequency >> 0) & 0xFF;
+    command_bytes[0] = (adf4351_requested_frequency >> 56) & 0xFF;
+    command_bytes[1] = (adf4351_requested_frequency >> 48) & 0xFF;
+    command_bytes[2] = (adf4351_requested_frequency >> 40) & 0xFF;
+    command_bytes[3] = (adf4351_requested_frequency >> 32) & 0xFF;
+    command_bytes[4] = (adf4351_requested_frequency >> 24) & 0xFF;
+    command_bytes[5] = (adf4351_requested_frequency >> 16) & 0xFF;
+    command_bytes[6] = (adf4351_requested_frequency >> 8) & 0xFF;
+    command_bytes[7] = (adf4351_requested_frequency >> 0) & 0xFF;
+    command_bytes[8] = (adf4351_requested_vco_enable ? 0x01 : 0x00) & 0xFF;
 
-    rc = libusb_control_transfer(devh, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_OUT | LIBUSB_RECIPIENT_DEVICE, 0xDC, 0x0000, 0x0000, freq_bytes, 8, 0);
+    rc = libusb_control_transfer(devh, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_OUT | LIBUSB_RECIPIENT_DEVICE, 0xDC, 0x0000, 0x0000, command_bytes, 9, 0);
     if (rc < 0)
     {
         fprintf(stderr, "Error during control transfer: %s\n",
