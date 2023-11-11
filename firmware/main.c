@@ -115,7 +115,7 @@ static void adf4351_write_reg(uint32_t _reg)
 
     gpio_clear(GPIOB, GPIO15); // Clk DOWN
 
-    for(k = 4; k >= 0; k--)
+    for(k = 3; k >= 0; k--)
     {
         for(i = 7; i >= 0; i--)
         {
